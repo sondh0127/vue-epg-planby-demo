@@ -1,3 +1,3 @@
-# vitejs-vite-cmjc9h
+# vue-epg-planby-demo
 
-[Edit on StackBlitz ⚡️](https://stackblitz.com/edit/vitejs-vite-cmjc9h)
+[Edit on StackBlitz ⚡️](https://stackblitz.com/edit/vue-epg-planby-demo)
