@@ -1,4 +1,12 @@
 <script lang="ts" setup>
+import {
+  addDays,
+  addHours,
+  endOfDay,
+  format,
+  startOfDay,
+  subDays,
+} from 'date-fns';
 import type { Channel, Program, Theme } from '@sondh0127/vue-epg-planby';
 import {
   Epg,
@@ -9,16 +17,6 @@ import {
 } from '@sondh0127/vue-epg-planby';
 import '@sondh0127/vue-epg-planby/style.css';
 
-import {
-  addDays,
-  addHours,
-  endOfDay,
-  format,
-  parseISO,
-  secondsToHours,
-  startOfDay,
-  subDays,
-} from 'date-fns';
 import { fetchChannels, fetchEpg } from './helpers';
 
 const darkTheme: Theme = {
@@ -32,9 +30,6 @@ const darkTheme: Theme = {
     300: '#2C7A7B',
   },
   loader: {
-    teal: '#5DDADB',
-    purple: '#3437A2',
-    pink: '#F78EB6',
     bg: '#171923db',
   },
   scrollbar: {
@@ -77,10 +72,7 @@ const themeLight: Theme = {
     300: '#2C7A7B',
   },
   loader: {
-    teal: '#5DDADB',
-    purple: '#3437A2',
-    pink: '#F78EB6',
-    bg: '#171923db',
+    bg: '#cbd5e0db',
   },
   scrollbar: {
     border: '#ffffff',
@@ -111,7 +103,7 @@ const themeLight: Theme = {
   },
 };
 
-const themeValue = ref('dark');
+const themeValue = useStorage('__VUE_EPG_THEME__', 'light');
 const options = [
   {
     label: 'Dark theme',
@@ -137,32 +129,22 @@ const timeRange = ref([
   endOfDay(new Date()),
 ]);
 
-const startDate = computed({
-  get() {
-    const day = date.value;
-    const startTime = timeRange.value[0];
-    day.setHours(startTime.getHours());
-    day.setMinutes(startTime.getMinutes());
-    day.setSeconds(startTime.getSeconds());
-    return formatTime(day);
-  },
-  set(value) {
-    // date.value = parseISO(value)
-  },
+const startDate = computed(() => {
+  const day = date.value;
+  const startTime = timeRange.value[0];
+  day.setHours(startTime.getHours());
+  day.setMinutes(startTime.getMinutes());
+  day.setSeconds(startTime.getSeconds());
+  return formatTime(day);
 });
 
-const endDate = computed({
-  get() {
-    const day = date.value;
-    const endTime = timeRange.value[1];
-    day.setHours(endTime.getHours());
-    day.setMinutes(endTime.getMinutes());
-    day.setSeconds(endTime.getSeconds());
-    return formatTime(day);
-  },
-  set(value) {
-    // date.value = parseISO(value)
-  },
+const endDate = computed(() => {
+  const day = date.value;
+  const endTime = timeRange.value[1];
+  day.setHours(endTime.getHours());
+  day.setMinutes(endTime.getMinutes());
+  day.setSeconds(endTime.getSeconds());
+  return formatTime(day);
 });
 
 const itemHeight = ref(80);
@@ -218,6 +200,14 @@ watch(date, async () => {
 function disabledSeconds() {
   return Array.from({ length: 60 }, (_, i) => i);
 }
+
+function onProgramClick(p: Program) {
+  console.log('onProgramClick', p);
+}
+
+function onChannelClick(c: Channel) {
+  console.log('onChannelClick', c);
+}
 </script>
 
 <template>
@@ -225,6 +215,9 @@ function disabledSeconds() {
     <el-card class="w-full">
       <div class="flex items-center gap-5px">
         <el-form inline>
+          <el-form-item label="Scroll to Now">
+            <el-button class="" @click="fetchDate"> Reload </el-button>
+          </el-form-item>
           <el-form-item label="Scroll to Now">
             <el-button class="" @click="onScrollToNow()"> Now </el-button>
           </el-form-item>
@@ -295,7 +288,85 @@ function disabledSeconds() {
 
   <div class="w-full h-80vh">
     <Epg :is-loading="isLoading" v-bind="getEpgProps()">
-      <Layout v-bind="getLayoutProps()" />
+      <Layout
+        v-bind="getLayoutProps()"
+        @program-click="onProgramClick"
+        @channel-click="onChannelClick"
+      >
+        <template
+          #program="{ data, format12HoursTime, theme, isLive, isMinWidth }"
+        >
+          <div class="flex w-full justify-start">
+            <img
+              v-if="isLive && isMinWidth"
+              class="mr-15px rounded-6px w-100px"
+              :src="data.image"
+              alt="Preview"
+            />
+            <div class="overflow-hidden">
+              <div
+                class="text-14px font-medium text-left mt-0 mb-5px truncate"
+                :style="{
+                  color: `${theme.grey['300']}`,
+                }"
+              >
+                {{ data.title }}
+              </div>
+              <div
+                class="block text-12.5px font-normal text-left truncate"
+                :style="{
+                  color: `${theme.text.grey['500']}`,
+                }"
+                aria-label="program time"
+              >
+                {{ format12HoursTime(data.since) }} -{{ ' ' }}
+                {{ format12HoursTime(data.till) }}
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template
+          #timeline="{
+            formatTimelineTime,
+            index,
+            theme,
+            offsetStartHoursRange,
+            dividers,
+            hourWidth,
+          }"
+        >
+          <div
+            class="text-14px relative"
+            :style="{
+              width: `${hourWidth}px`,
+            }"
+          >
+            <div
+              class="absolute top-18px"
+              :style="{
+                color: `${theme.text.grey[300]}`,
+                left: `${index === 0 ? 0 : -18}px`,
+              }"
+            >
+              {{ formatTimelineTime(index + offsetStartHoursRange) }}
+            </div>
+
+            <div class="h-full w-full grid grid-cols-4 items-end pb-6px">
+              <div
+                v-for="(__, i) in dividers"
+                :key="i"
+                :style="{
+                  background: `${theme.timeline.divider.bg}`,
+                  height: `10px`,
+                  width: `1px`,
+                  marginRight: `${hourWidth}px`,
+                }"
+              />
+            </div>
+          </div>
+        </template>
+      </Layout>
     </Epg>
   </div>
 </template>

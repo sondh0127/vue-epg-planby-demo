@@ -10,7 +10,7 @@ export default defineConfig({
   plugins: [
     Vue(),
     AutoImport({
-      imports: ['vue'],
+      imports: ['vue', '@vueuse/core'],
       dts: './src/auto-imports.d.ts',
       dirs: ['./src/composables'],
       vueTemplate: true,
