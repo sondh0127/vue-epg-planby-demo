@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@sondh0127/vue-epg-planby": "^0.2.6",
+    "@sondh0127/vue-epg-planby": "^0.2.7",
+    "@vueuse/core": "^8.9.4",
     "vue": "^3.2.37"
   },
   "devDependencies": {
